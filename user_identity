@@ -1,0 +1,82 @@
+#-*- coding:utf-8 -*-
+import pandas as pd
+import pickle
+
+data = pd.read_csv(r"D:\work\user_identity\equip1.csv",encoding='ANSI')
+data = data[['uuid','access_time','ip','location','network_type','os_version','wifi_ssid']]
+uuid_map = {val:i for i,val in enumerate(set(data['uuid']))}
+data['uuid'] = data['uuid'].map(uuid_map)
+
+def time_clear(date):
+    a = date.split(" ")[1]
+    b,c = a.split(":")
+    return round(float(b)+float(c)/60,2)
+
+net = pd.get_dummies(data['network_type'])
+pdata = data[['os_version','uuid']]
+info = []
+for i in range(data.shape[0]):
+    ti = time_clear(data.iloc[i,1])
+    slot = 0
+    if ti > 12:
+        slot = 1
+        ti = ti - 12
+    st = data.iloc[i,3].index("longitude")
+    en = data.iloc[i,3].index("latitude")
+    long = float(data.iloc[i,3][st+14:en-6])
+    lati = float(data.iloc[i,3][en+13:-3])
+    longint = int(long)
+    longdot = long - longint
+    latint = int(lati)
+    latidot = lati - latint
+    info.append([slot,ti,longint,longdot,latint,latidot])
+info = pd.DataFrame(info)
+info.columns = ['slot','acctime','longint','longdot','latitude','latidot']
+
+info = pd.concat([info,net],axis=1)
+info = pd.concat([info,pdata],axis=1)
+data = info.iloc[:,:-1]
+label = info.iloc[:,-1]
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import preprocessing
+from sklearn.cross_validation import train_test_split
+
+mms = preprocessing.MinMaxScaler()  
+data1 = mms.fit_transform(data) 
+
+
+X_train,X_test,y_train,y_test = train_test_split(data1,label,
+                                                 test_size=0.25,random_state=0,stratify=label) 
+rfc = RandomForestClassifier(random_state=0)
+rfc = rfc.fit(X_train,y_train)
+ptest = rfc.predict(X_test)
+
+print("Traing Score:%f"%rfc.score(X_train,y_train))
+print("Testing Score:%f"%rfc.score(X_test,y_test))
+
+# save trained model
+with open('D:\code\model\\rfc.pickle', 'wb') as fw:
+    pickle.dump(rfc, fw)
+# save standard model    
+with open('D:\code\model\mms.pickle', 'wb') as fw:
+    pickle.dump(mms, fw)
+    
+# load trained model
+with open('D:\code\model\\rfc.pickle', 'rb') as fr:
+    new_rfc = pickle.load(fr)
+# load standard model
+with open('D:\code\model\\mms.pickle', 'rb') as fr:
+    new_mms = pickle.load(fr)
+    
+    
+pre_data = new_mms.transform(data)
+#pre = new_rfc.predict(pre_data)
+
+print("Traing Score:%f"%new_rfc.score(pre_data,label))
+
+
+
+
+
+
