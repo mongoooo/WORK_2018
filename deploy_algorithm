@@ -1,0 +1,101 @@
+算法部署：
+预准备：
+   1.部署的脚本，以函数的形式。
+     脚本要导入的包（无需本地安装，服务器上要安装）：
+     from socketserver import ThreadingMixIn
+     from xmlrpc.server import SimpleXMLRPCServer
+     脚本尾部添加的代码：
+     #一个永远驻扎的程序
+if __name__ == '__main__':
+    #s = SimpleXMLRPCServer(('0.0.0.0', 8003))
+    s = ThreadXMLRPCServer(('0.0.0.0', 8004))    # 参数 8004：公司提供的端口
+    print("Listening on port 8004")              # 用于测试是否部署成功
+    #s.register_function(main1)
+    s.register_function(user_identity)           # 注册的函数名，即函数接口，脚本提供给外不的接口
+    #s.register_function(FileFenci.chuli)
+    #s.register_function(result_json)
+    #s.register_function(read_file)
+    s.serve_forever()
+    
+    2.Xmanager安装：
+      安装xmannager
+      账号/密码：root/Zaq12wsx!       IP：119.3.4.18
+      登陆后：可在该环境下上转脚本及用到的文件：例如训练好的模型（当时遇到一个问题：编译时提醒没有sklearn模块，
+      是因为虚拟机环境没有安装该模块）
+ 
+关于部署：
+安装xmanager后，
+1.打开xshell：
+
+  ######################################################################
+  #                              Notice                                #
+  #                                                                    #
+  #  1. Please create unique passwords that use a combination of words,#
+  #   numbers, symbols, and both upper-case and lower-case letters.    #
+  #   Avoid using simple adjacent keyboard combinations such as        #
+  #   "Qwert!234","Qaz2wsx",etc.                                       #
+  #                                                                    #
+  #  2. Unless necessary, please DO NOT open or use high-risk ports,   #
+  #   such as Telnet-23, FTP-20/21, NTP-123(UDP), RDP-3389,            #
+  #   SSH/SFTP-22, Mysql-3306, SQL-1433,etc.                           #
+  #                                                                    #
+  #                                                                    #
+  #                     Any questions please contact 4000-955-988      #
+  ######################################################################
+[root@ecs-03-01-0005 ~]# 
+2.如上显示后：键入：cd ..   ,返回上一级目录：
+             键入：ls      ，即可看到mengy文件夹
+             键入：cd mengyi    即可看到mengyi文件夹下的子目录，每个子目录表示一种功能的算法
+             
+3. 如需部署新算法，新建之目录：mkdir new_algorithm,把需要的文件和脚本导入
+                            nohup python3 new_alg.py  编译部署程序
+                            ps -ef|grep python 查看现有部署的程序
+                            kill -9 端口号  ：杀掉部署的程序
+            
+4. 测试算法部署脚本：
+# -*- coding: utf-8 -*-
+import xmlrpc.client
+import json
+
+data = {
+    "uuid": "465fff2b94314ee0a533d270deddc8fd",
+    "ram": "887.000000",
+    "accessApp": "FaceCheck",
+    "accessTime": "2018-11-06 15:28:35",
+    "appType": "iOS",
+    "brand": "苹果",
+    "city": "上海市",
+    "country": "中国",
+    "cpu": "{\r\n  \"cpuNumber\" : \"2\",\r\n  \"cpuName\" : \"Apple A8\",\r\n  \"cpuType\" : \"CPU_TYPE_ARM64\"\r\n}",
+    "deviceType": "iPhone 6",
+    "diskSpace": "14.89 GB",
+    "ip": "172.16.20.142",
+    "isEmulator": "0",
+    "isJailbreak": "0",
+    "isProxy": "0",
+    "isRoot": "0",
+    "isVm": "0",
+    "isVpn": "0",
+    "location": "{\n  \"longitude\" : \"120.102138\",\n  \"latitude\" : \"30.301264\"\n}",
+    "networkType": 'Wi-Fi',
+    "operatorSystem": "iOS",
+    "os": "iOS",
+    "osVersion": 11,
+    "platform": "iPhone 6",
+    "region": "浙江省",
+    "resolution": "逻辑：667 × 375; 物理：1334 × 750",
+    "screenDpi": "逻辑：667 × 375; 物理：1334 × 750",
+    "screenSize": "逻辑：667 × 375; 物理：1334 × 750",
+    "shellSize": "逻辑：667 × 375; 物理：1334 × 750",
+    "wifiSsid": "{\r\n  \"wifiBssid\" : \"5c:3c:60:77:d5:50\",\r\n  \"wifiSignalStrength\" : \"3\",\r\n  \"wifiSsid\" : \"Powecn-All\",\r\n  \"currentIP\" : \"172.16.20.142\",\r\n  \"CarrierInfo\" : \"\",\r\n  \"wifiName\" : \"Powecn-All\"\r\n}",
+    "createTime": "2018-11-06 15:28:06.0",
+    "updateTime": "2018-11-08 14:40:36.0"
+}
+
+# create object
+s = xmlrpc.client.ServerProxy('http://119.3.4.18:8004')      # 服务的ip及端口号，并生产一个对象
+# print user id
+uid = s.user_identity(data)      # user_identity 注册的函数，data：函数需要传入的参数
+print(uid)                       # 如果打印出预想的结果说明部署成功
+ 
+      
