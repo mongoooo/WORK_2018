@@ -1,0 +1,87 @@
+# -*- coding: utf-8 -*-
+import pymysql
+import pandas as pd
+from string import Template
+
+conn = pymysql.connect(host='119.3.6.221', port=3306, user='root',
+                       passwd='citydo@123', db='aqhy', charset="utf8")
+cursor = conn.cursor()
+
+def filterData(target):
+    # connect mysql database:host,port,user,passwd,db,charset
+    #conn = pymysql.connect(host='119.3.6.221', port=3306, user='root',
+     #                      passwd='citydo@123', db='aqhy', charset="utf8")
+    #cursor = conn.cursor()
+    # accept message
+    # 使用硬件信息：deviceType,resolution,screenSize,screenDPI,cpuNumber,cpuType,RAM,diskSpace;
+    # 模型实用信息：accessTime，isProxy，isVpn，location(longitude,latitude),networktype,oVersion,maxfrequency，minFrequency
+    sql = Template(
+        '''
+            select uuid,access_time,is_proxy,is_vpn,network_type,os_version,lat,lng,max_frequency,min_frequency
+            from aqhy.s_device_finger_mark
+            where device_type="$devicetype" and resolution="$resolution" and screen_size="$screen_size" and screen_dpi="$screen_dpi"
+            and cpu_number="$cpu_number" and cpu_type="$cpu_type" and ram="$ram" and disk_space="$disk_space";
+        ''').substitute(
+        {"devicetype": target["deviceType"], "resolution": target["resolution"], "screen_size": target["screenSize"],
+         "screen_dpi": target["screenDpi"], "cpu_number": target["cpuNumber"], "cpu_type": target["cpuType"],
+         "ram": target["ram"], "disk_space": target["diskSpace"]})
+    cursor.execute(sql)
+    data = cursor.fetchall()
+    out = []
+    for r in data:
+        out.append(r)
+    out = pd.DataFrame(out)
+    out.columns = ["uuid","accessTime","isProxy","isVpn","networktype","osVersion","latitude","longitude","maxfrequency","minFrequency"]
+    return out
+
+
+
+if __name__ == '__main__':
+    target = {
+        "uuid": "465fff2b94314ee0a533d270deddc8fd",
+        "ram": "1215.484375",
+        "accessApp": "FaceCheck",
+        "accessTime": "2018-11-06 15:28:35",
+        "appType": "iOS",
+        "brand": "苹果",
+        "city": "上海市",
+        "country": "中国",
+        "cpuNumber": "1",
+        "cpuName": "Apple A8",
+        "cpuType": "CPU_TYPE_ARM640",
+        "deviceType": "Xiaomi MI0",
+        "diskSpace": "119.20 GB",
+        "ip": "172.16.20.142",
+        "isEmulator": "0",
+        "isJailbreak": "0",
+        "isProxy": "0",
+        "isRoot": "0",
+        "isVm": "0",
+        "isVpn": "0",
+        "longitude": "120.102138",
+        "latitude": "30.301264",
+        "GeoHash": "WX01YTI",
+        "networkType": "Wi-Fi",
+        "operatorSystem": "iOS",
+        "os": "iOS",
+        "osVersion": "11",
+        "platform": "iPhone 6",
+        "region": "浙江省",
+        "resolution": "逻辑：737x393;物理：2028x10800",
+        "screenDpi": "逻辑：737x393;物理：2028x10800",
+        "screenSize": "逻辑：737x393;物理：2028x10800",
+        "shellSize": "逻辑：667 × 375; 物理：1334 × 750",
+        "wifiBssid": "5c:3c:60:77:d5:50",
+        "wifiSignalStrength": "3",
+        "wifiSsid": "Powecn-All",
+        "currentIP": "172.16.20.142",
+        "CarrierInfo": "",
+        "wifiName": "Powecn-All",
+        "createTime": "2018-11-06 15:28:06.0",
+        "updateTime": "2018-11-08 14:40:36.0"
+    }
+    data = filterData(target)
+    print(data.head(2))
+
+
+
