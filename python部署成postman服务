@@ -1,0 +1,61 @@
+from flask import request,Flask
+from flask import render_template
+import json
+import numpy as np
+import pickle
+import os
+# 生成app
+app = Flask(__name__)
+
+# 服务实现的方法，传输通过request获取
+@app.route('/deviceReg/' , methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        a = request.get_data() # request获取调用参数
+        msg = json.loads(a)
+        filts = ['resolution', 'cpuType', 'cpuName', 'cpuNumber', 'accessApp', 'osIsios']
+        select = ['isEmulator', 'isJailbreak', 'isProxy', 'isRoot', 'isVm', 'isVpn',
+                  'accessTimeZone', 'accessTimeValue', 'brandHaschn', 'brandLength', 'brandHasspechars', 'diskSpace',
+                  'ipP1', 'ipP2', 'ipP3', 'ipP4', 'platformEngNum', 'platformNumNum', 'platformHasspechars',
+                  'latInteger',
+                  'latDecimal', 'lngInteger', 'lngDecimal', 'netIs2g', 'netIs3g', 'netIs4g', 'netIswifi', 'netIsother',
+                  'carrierInfoIschinaunion', 'carrierInfoIschinatelecom', 'carrierInfoIschinamobile',
+                  'carrierInfoIsunknown',
+                  'carrierInfoIsother']
+        # 查找设备key
+        # 查找设备key
+        index = ''.join(str(msg[fl]) for fl in filts)
+        req = np.array([msg[sl] for sl in select]).reshape(1, -1)
+        dirname, _ = os.path.split(os.path.abspath(__file__))
+        selpath = os.path.join(os.path.join(dirname, 'log'), 'modelStatus.txt')
+        modelDate = np.loadtxt(selpath, dtype=str)[-1]
+        timePath = os.path.join(os.path.join(dirname, 'log'), modelDate)
+        # 以上三行代码替代
+        # timePath = os.path.join(os.path.join(dirname,'log'),'20181224111111')
+        dictPath = os.path.join(timePath, 'dict')
+        modelPath = os.path.join(timePath, 'model')
+        # 加载key桶，
+        tunkPath = os.path.join(dictPath, 'tunk.json')
+        tunk = json.load(open(tunkPath, encoding='utf-8'))
+
+        if index in tunk:
+            numb = tunk[index]
+            IDP = os.path.join(dictPath, 'ID' + str(numb) + '.json')
+            modelP = os.path.join(modelPath, 'model' + str(numb) + '.pickle')
+            idMap = json.load(open(IDP, encoding='utf-8'))
+            with open(modelP, 'rb') as fr:
+                newModel = pickle.load(fr)
+            outID = idMap[str(newModel.predict(req)[0])]
+            proba = np.max(newModel.predict_proba(req))
+        else:
+            outID = 'NOSUCHDEVICEEVERBEFORE'
+            proba = -1
+        out = json.dumps({"id": outID, "prob": str(proba)})
+        return out   #返回结果
+    else:
+        return json.dumps({"id": "unddefinedinput", "prob": 0})
+
+if __name__ == '__main__':
+    #app.run(threaded=True,debug=False)
+    # 定义服务地址，及端口号：postman访问路径 http://172.16.16.86:5001/deviceReg/ 见11行
+    app.run(host='172.16.16.86',port=5001,threaded=True,debug=False)
